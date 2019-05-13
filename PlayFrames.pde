@@ -1,11 +1,9 @@
-import java.util.ArrayList;
 import java.nio.*;
-//import queasycam.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 
-import peasy.*;
-import peasy.org.apache.commons.math.*;
-import peasy.org.apache.commons.math.geometry.*;
-import peasy.test.*;
+import queasycam.*;
+// import controlP5.*;
 
 enum RenderMode {
   POINTS,
@@ -17,38 +15,68 @@ PShader sh;
 
 int  vertLoc;
 
-PeasyCam cam;
+QueasyCam cam2;
 
-RenderMode renderMode = RenderMode.POINTS;
+// ControlP5 cp5;
+// ControlFrame cf;
+
+RenderMode renderMode = RenderMode.CUSTOM;
+boolean showAxises = false;
 
 // transformations
 float a = TWO_PI;
 int zval = 250;
 float scaleVal = 220;
 
-int f = 0;
+boolean didPositionWindow = false;
 
 int POINTS_PER_FRAME = 512 * 424;
-int numFrames =  30; // 30 frames  = 1s of recording
 int frameCounter = 0; // frame counter
+int f = 0;
 
 // Array where all the frames are allocated
-ArrayList<FloatBuffer> mFrames;
+int MAX_NUM_FRAMES = -1;
+int FRAME_OFFSET = 0;
+// String SCENE_NAME = "20190405_152131_300-400";
+String SCENE_NAME = "20190405_133939";
+ArrayList<FloatBuffer> frames;
+boolean hasLoadedFrames = false;
 
 // VBO buffer location in the GPU
 int vertexVboId;
 
-
+// Point filters
 float filterX = 0.0;
-float filterZ = 0.0;
+float filterZ = 100.0;
+int takeEvery = 1;
 
+// Image resources
+PImage bg;
 
+// Colors
+color WHITE_SMOKE = color(246, 245, 239);
+color EGG_SHELL = color(244, 241, 232);
+color ORANGE = color(235, 129, 44);
+color TURQUOISE = color(86, 198, 202);
+color DARK_TURQUOISE = color(26, 61, 56);
+
+/**
+ * Settings
+ */
+void settings() {
+  size(960, 640, P3D);
+}
+
+/**
+ * Setup
+ */
 void setup() {
-  size(1024, 768, P3D);
+  surface.setLocation(310, 10);
+  frameRate(25);
 
   sh = loadShader("frag.glsl", "vert.glsl");
   sh.set("u_resolution", (float) width, (float) height);
-  
+
   PGL pgl = beginPGL();
 
   IntBuffer intBuffer = IntBuffer.allocate(1);
@@ -59,42 +87,51 @@ void setup() {
 
   endPGL();
 
-  mFrames = new ArrayList<FloatBuffer>();
-  for (int i = 0; i < numFrames; i++) {
-    FloatBuffer frame = loadOBJFrame(i);
-    mFrames.add(frame);
+  bg = loadImage("img/bg1.png");
 
-    println(frame);
-  }
+  // Load scene frames
+  frames = new ArrayList<FloatBuffer>();
 
-  cam = new PeasyCam(this, 100);
-  cam.setMinimumDistance(50);
-  cam.setMaximumDistance(1000);
-  cam.rotateY(PI);
-  cam.lookAt(-100, 100, 450);
+  // Camera
+  cam2 = new QueasyCam(this);
+  resetCamera();
 
-  frameRate(25);
+  // Controls
+  // cf = new ControlFrame(this, 200, 200, "Controls");
 }
 
 void draw() {
+  if (hasLoadedFrames == false) {
+    loadFrames();
+    hasLoadedFrames = true;
+  }
+
   sh.set("u_time", millis() / 1000.0);
-  
-  background(30);
 
-  stroke(255, 0, 0);
-  line(0, 0, 0, 300, 0, 0);
-  stroke(0, 255, 0);
-  line(0, 0, 0, 0, 300, 0);
-  stroke(0, 0, 255);
-  line(0, 0, 0, 0, 0, 300);
+  if (didPositionWindow == false) {
+    frame.setLocation(displayWidth - width, 0);
+    didPositionWindow = true;
+  }
 
-  // Translate the scene to the center
-  //translate(width / 2, height / 2, zval);
-  //scale(scaleVal, -1 * scaleVal, scaleVal);
-  //rotate(a, 0.0f, 1.0f, 0.0f);
+  background(bg);
+
+  // Move camera
+  PVector cameraPos = cam2.position.copy();
+  cameraPos.x += 0.1;
+  cam2.position = cameraPos;
+
+  // Draw axises
+  if (showAxises) {
+    stroke(255, 0, 0);
+    line(0, 0, 0, 300, 0, 0);
+    stroke(0, 255, 0);
+    line(0, 0, 0, 0, 300, 0);
+    stroke(0, 0, 255);
+    line(0, 0, 0, 0, 0, 300);
+  }
 
   // Get the points in 3D space
-  FloatBuffer pointCloudBuffer = mFrames.get(f % numFrames);
+  FloatBuffer pointCloudBuffer = frames.get(f % frames.size());
 
   if (renderMode == RenderMode.POINTS) {
     renderPoints(pointCloudBuffer);
@@ -102,21 +139,35 @@ void draw() {
     renderPolygon(pointCloudBuffer);
   }
 
-  stroke(255, 0, 0);
-  text(frameRate, 50, height - 50);
+  // stroke(255, 0, 0);
+  // text(frameRate, 50, height - 50);
 
-  translate(-100, 100, 450);
-  fill(255,0,0);
-  box(30);
-  translate(0, 0, 0);
+  // translate(-100, 100, 450);
+  // fill(255,0,0);
+  // box(30);
+  // translate(0, 0, 0);
 
-  cam.feed();
-
-  if (f < numFrames) {
+  if (f < frames.size()) {
     // saveFrame();
   }
 
   f++;
+}
+
+void loadFrames() {
+  File f = dataFile(SCENE_NAME);
+  String[] names = f.list();
+  Arrays.sort(names);
+  printArray(names);
+
+  int numFrames = MAX_NUM_FRAMES > 0
+    ? Math.min(MAX_NUM_FRAMES, names.length - FRAME_OFFSET)
+    : names.length;
+
+  for (int i = FRAME_OFFSET; i < FRAME_OFFSET + numFrames; i++) {
+    FloatBuffer frame = loadOBJFrame(SCENE_NAME, names[i], PointFilter.REMOVE_ORIGOS);
+    frames.add(frame);
+  }
 }
 
 void renderPolygon(FloatBuffer pointsBuffer) {
@@ -125,10 +176,11 @@ void renderPolygon(FloatBuffer pointsBuffer) {
   for (int i = 0; i < POINTS_PER_FRAME; i += 3) {
     PVector point = new PVector(
       pointsBuffer.get(i) * 100,
-      pointsBuffer.get(i + 1) * 100,
+      pointsBuffer.get(i + 1) * -100,
       pointsBuffer.get(i + 2) * 100
     );
-    if (point.x < filterX && point.y != 0 && point.z > filterZ) {
+    if (point.z < filterZ && i % takeEvery == 0) {
+    // if (point.x < filterX && point.y != 0 && point.z > filterZ) {
       // println("(" + point.x + ", " + point.y + ", " + point.z + ")");
       points.add(point);
     }
@@ -136,37 +188,45 @@ void renderPolygon(FloatBuffer pointsBuffer) {
 
   shader(sh);
 
-  // beginShape(TRIANGLES);
-  // stroke(200);
-  // strokeWeight(1);
-  // lights();
-  noStroke();
-  fill(200);
-  // sphereDetail(4);
-  PVector prevPoint = new PVector(0, 0, 0);
+  stroke(200);
+  // fill(200);
+  // noStroke();
+  noFill();
+  if (mousePressed) {
+    lights();
+  }
+  beginShape(POINTS);
 
   for (int i = 0; i < points.size(); i++) {
     PVector point = points.get(i);
-    // vertex(point.x, point.y, point.z);
-    // line(prevPoint.x, prevPoint.y, prevPoint.z, point.x, point.y, point.z);
-    pushMatrix();
-    translate(point.x, point.y, point.z);
-    box(0.1);
-    popMatrix();
-    prevPoint = point;
-    // println(i);
-    // println("(" + point.x + ", " + point.y + ", " + point.z + ")");
+
+    // sh.set("coord", point);
+
+    color pointColor = lerpColor(ORANGE, TURQUOISE, sin((float(f) / 100.0) + point.z / 10.0));
+
+    // stroke(
+    //   100.0 + 100.0 * sin((float) (10.0 * point.x + f * 1.0f) / 150.0),
+    //   100.0 + 100.0 * sin((float) (10.0 * point.y + f * 1.0f) / 150.0),
+    //   0.0 + 30.0 * sin((float) (30.0 * point.z + f * 1.0f) / 150.0)
+    // );
+
+    stroke(pointColor);
+
+    vertex(point.x, point.y, point.z);
   }
 
-  // endShape();
+  endShape();
 }
 
 void renderPoints(FloatBuffer pointCloudBuffer) {
   // Data size, 512 x 424 x 3 (XYZ) coordinate
   int vertData = 512 * 424 * 3;
 
+  translate(width / 2, height / 2, zval);
+  scale(100, -100, 100);
+
   pgl = beginPGL();
-  sh.bind();
+  // sh.bind();
 
   vertLoc = pgl.getAttribLocation(sh.glProgram, "vertex");
 
@@ -178,46 +238,28 @@ void renderPoints(FloatBuffer pointCloudBuffer) {
     pgl.bufferData(PGL.ARRAY_BUFFER, Float.BYTES * vertData, pointCloudBuffer, PGL.DYNAMIC_DRAW);
     pgl.vertexAttribPointer(vertLoc, 3, PGL.FLOAT, false, Float.BYTES * 3, 0);
   }
-  
+
   // unbind VBOs
   pgl.bindBuffer(PGL.ARRAY_BUFFER, 0);
-  pgl.drawArrays(PGL.POINTS, 0, vertData);
+  pgl.drawArrays(PGL.LINES, 0, vertData);
   pgl.disableVertexAttribArray(vertLoc);
 
-  sh.unbind();
+  // sh.unbind();
   endPGL();
 }
 
 public void keyPressed() {
-  if (key == '1') {
-    cam.rotateY(0.1);
-    println(cam.getRotations()[1]);
+  if (key == '5') {
+    filterZ += 20;
   }
-  if (key == '2') {
-    cam.rotateY(0.1);
-    println(cam.getRotations()[1]);
+  if (key == '6') {
+    filterZ -= 20;
   }
-
-  // if (key == 'z') {
-  //   scaleVal += 0.1;
-  //   println(scaleVal);
-  // }
-  // if (key == 'x') {
-  //   scaleVal -= 0.1;
-  //   println(scaleVal);
-  // }
-
-  if (key == 'q') {
-    a += 0.1;
-    println(a);
+  if (key == '=') {
+    takeEvery += 10;
   }
-  if (key == 'w') {
-    a -= 0.1;
-    println(a);
-  }
-
-  if (key == 'c') {
-    //cam.controllable = !cam.controllable;
+  if (key == '-') {
+    takeEvery = Math.max(takeEvery - 10, 1);
   }
 
   if (key == 'm') {
@@ -227,9 +269,68 @@ public void keyPressed() {
       renderMode = RenderMode.POINTS;
     }
   }
+
+  if (key == 'x') {
+    showAxises = !showAxises;
+  }
+
+  if (key == 'r') {
+    resetCamera();
+  }
+
+  if (key == 'l') {
+    println("position:");
+    println(cam2.position);
+    println("pan:");
+    println(cam2.pan);
+    println("tilt:");
+    println(cam2.tilt);
+  }
 }
 
-public void mouseMoved() {
-  filterX = 500 * mouseX / width;
-  filterZ = 500 * mouseY / height;
+void keyTyped() {
+  // if (key == 'a') {
+  //   float[] lookAt = cam.getLookAt();
+  //   PVector newLookAt = new PVector(lookAt[0], lookAt[1], lookAt[2]);
+  //   newLookAt.add(new PVector(-50, 0, 0));
+  //   cam.lookAt(newLookAt.x, newLookAt.y, newLookAt.z);
+  // }
+  // if (key == 'd') {
+  //   float[] lookAt = cam.getLookAt();
+  //   PVector newLookAt = new PVector(lookAt[0], lookAt[1], lookAt[2]);
+  //   newLookAt.add(new PVector(50, 0, 0));
+  //   cam.lookAt(newLookAt.x, newLookAt.y, newLookAt.z);
+  // }
+  // if (key == 'w') {
+  //   float[] lookAt = cam.getLookAt();
+  //   PVector newLookAt = new PVector(lookAt[0], lookAt[1], lookAt[2]);
+  //   newLookAt.add(new PVector(0, 0, 50));
+  //   cam.lookAt(newLookAt.x, newLookAt.y, newLookAt.z);
+  // }
+  // if (key == 's') {
+  //   float[] lookAt = cam.getLookAt();
+  //   PVector newLookAt = new PVector(lookAt[0], lookAt[1], lookAt[2]);
+  //   newLookAt.add(new PVector(0, 0, -50));
+  //   cam.lookAt(newLookAt.x, newLookAt.y, newLookAt.z);
+  // }
+}
+
+// public void mouseMoved() {
+//   filterX = 500 * mouseX / width;
+//   filterZ = 500 * mouseY / height;
+// }
+
+void resetCamera() {
+  cam2.sensitivity = 0.5;
+
+  if (renderMode == RenderMode.POINTS) {
+    cam2.position = new PVector(511.9462, 386.57687, 283.57956);
+    cam2.pan = 1.3836485;
+    cam2.tilt = 0.25566342;
+  }
+  else if (renderMode == RenderMode.CUSTOM) {
+    cam2.position = new PVector(-22.433413, -49.91769, -95.838234);
+    cam2.pan = 1.3967388;
+    cam2.tilt = -0.051132716;
+  }
 }

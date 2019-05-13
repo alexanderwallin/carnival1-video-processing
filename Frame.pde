@@ -4,7 +4,7 @@ Simple class that manager saving each FloatBuffer and writes the data into a OBJ
 class FrameBuffer {
 
   FloatBuffer frame;
-  
+
   //id of the frame
   int frameId;
 
@@ -30,7 +30,7 @@ class FrameBuffer {
       float z =  frame.get(i*3 + 2);
       points[i] = "v "+x+" "+y+" "+z;
     }
-    
+
     saveStrings("data/frame0"+frameId+".obj", points);
     println("Done Saving Frame "+frameId);
   }
@@ -43,18 +43,50 @@ class FrameBuffer {
     original.rewind();
     clone.flip();
     return clone;
-  } 
+  }
 }
 
-FloatBuffer loadOBJFrame(int fId) {
-  String[] lines = loadStrings("data/frame0" + fId + ".obj");
-  FloatBuffer frame = FloatBuffer.allocate(lines.length * 3);
+FloatBuffer loadOBJFrame(String sceneName, int fId, PointFilter filter) {
+  String frameName = String.format("frame%4s", Integer.toString(fId)).replace(" ", "0");
+  String filename = frameName + ".obj";
+  return loadOBJFrame(sceneName, filename, filter);
+}
+
+FloatBuffer loadOBJFrame(String sceneName, String filename, PointFilter filter) {
+  println(filename);
+  String[] lines = loadStrings("data/" + sceneName + "/" + filename);
+  float[][] points = new float[lines.length][3];
+
+  int pointCount = 0;
+
+  // println("welcome to load obj frame");
+  // println("filter: " + (filter == PointFilter.REMOVE_ORIGOS));
 
   for (int i = 0; i < lines.length; i++) {
     String[] coordinates = split(lines[i], ' ');
-    frame.put(i*3 + 0, float(coordinates[1]));
-    frame.put(i*3 + 1, float(coordinates[2]));
-    frame.put(i*3 + 2, float(coordinates[3]));
+    float x = float(coordinates[1]);
+    float y = float(coordinates[2]);
+    float z = float(coordinates[3]);
+
+    if (filter == PointFilter.REMOVE_ORIGOS) {
+      if (x == 0 && y == 0 && z == 0) {
+        continue;
+      }
+    }
+
+    float[] point = { x, y, z };
+    points[pointCount] = point;
+    pointCount++;
+  }
+
+  // println("loaded " + pointCount + " points");
+
+  FloatBuffer frame = FloatBuffer.allocate(pointCount * 3);
+  for (int i = 0; i < pointCount; i++) {
+    float[] point = points[i];
+    frame.put(i * 3 + 0, point[0]);
+    frame.put(i * 3 + 1, point[1]);
+    frame.put(i * 3 + 2, point[2]);
   }
 
   return frame;
