@@ -35,7 +35,7 @@ int frameCounter = 0; // frame counter
 int f = 0;
 
 // Array where all the frames are allocated
-int MAX_NUM_FRAMES = -1;
+int MAX_NUM_FRAMES = 10;
 int FRAME_OFFSET = 0;
 // String SCENE_NAME = "20190405_152131_300-400";
 String SCENE_NAME = "20190405_133939";
@@ -59,6 +59,9 @@ color EGG_SHELL = color(244, 241, 232);
 color ORANGE = color(235, 129, 44);
 color TURQUOISE = color(86, 198, 202);
 color DARK_TURQUOISE = color(26, 61, 56);
+
+// Recording
+Recorder rec;
 
 /**
  * Settings
@@ -98,6 +101,8 @@ void setup() {
 
   // Controls
   // cf = new ControlFrame(this, 200, 200, "Controls");
+
+  rec = new Recorder();
 }
 
 void draw() {
@@ -105,6 +110,8 @@ void draw() {
     loadFrames();
     hasLoadedFrames = true;
   }
+
+  int frameId = f % frames.size();
 
   sh.set("u_time", millis() / 1000.0);
 
@@ -117,7 +124,7 @@ void draw() {
 
   // Move camera
   PVector cameraPos = cam2.position.copy();
-  cameraPos.x += 0.1;
+  cameraPos.x += 1;
   cam2.position = cameraPos;
 
   // Draw axises
@@ -131,7 +138,7 @@ void draw() {
   }
 
   // Get the points in 3D space
-  FloatBuffer pointCloudBuffer = frames.get(f % frames.size());
+  FloatBuffer pointCloudBuffer = frames.get(frameId);
 
   if (renderMode == RenderMode.POINTS) {
     renderPoints(pointCloudBuffer);
@@ -139,17 +146,7 @@ void draw() {
     renderPolygon(pointCloudBuffer);
   }
 
-  // stroke(255, 0, 0);
-  // text(frameRate, 50, height - 50);
-
-  // translate(-100, 100, 450);
-  // fill(255,0,0);
-  // box(30);
-  // translate(0, 0, 0);
-
-  if (f < frames.size()) {
-    // saveFrame();
-  }
+  rec.update(frameId);
 
   f++;
 }
@@ -274,8 +271,17 @@ public void keyPressed() {
     showAxises = !showAxises;
   }
 
-  if (key == 'r') {
+  if (key == 'c') {
     resetCamera();
+  }
+
+  if (key == 'r') {
+    if (rec.isRecording()) {
+      rec.stopRecording();
+    }
+    else {
+      rec.startRecording(SCENE_NAME, frames.size());
+    }
   }
 
   if (key == 'l') {
