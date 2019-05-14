@@ -65,7 +65,7 @@ Recorder rec;
  * Settings
  */
 void settings() {
-  size(960, 640, P3D);
+  size(1280, 720, P3D);
 }
 
 /**
