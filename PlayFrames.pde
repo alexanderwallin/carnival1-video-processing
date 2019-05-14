@@ -212,10 +212,10 @@ void renderPolygon(FloatBuffer pointsBuffer) {
 
     color pointColor = lerpColor(ORANGE, TURQUOISE, sin(z * scene.zColorDepth));
 
-    if (renderStyle == RenderStyle.LINES) {
-      stroke(pointColor);
-    } else {
+    if (renderStyle == RenderStyle.TRIANGLES) {
       fill(pointColor);
+    } else {
+      stroke(pointColor);
     }
 
     vertex(x, y, z);
