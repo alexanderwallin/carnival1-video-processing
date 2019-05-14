@@ -98,6 +98,7 @@ void setup() {
 
   // Camera
   cam2 = new QueasyCam(this);
+  cam2.sensitivity = 0;
   resetCamera();
 
   rec = new Recorder();
@@ -238,11 +239,12 @@ public void keyPressed() {
   }
 
   if (key == 'm') {
-    if (renderMode == RenderMode.POINTS) {
-      renderMode = RenderMode.CUSTOM;
-    } else {
-      renderMode = RenderMode.POINTS;
-    }
+    // if (renderMode == RenderMode.POINTS) {
+    //   renderMode = RenderMode.CUSTOM;
+    // } else {
+    //   renderMode = RenderMode.POINTS;
+    // }
+    cam2.sensitivity = cam2.sensitivity == 0.0 ? 1.0 : 0.0;
   }
 
   if (key == 'x') {
@@ -284,7 +286,6 @@ void keyReleased(KeyEvent event) {
 }
 
 void resetCamera() {
-  cam2.sensitivity = 0;
   cam2.position = scene.cameraPosition;
   cam2.pan = scene.cameraPan;
 }
