@@ -95,9 +95,17 @@ class ControlFrame extends PApplet {
       .setValue(this.scene.dolly.direction.x)
       ;
 
-    this.cp5.addSlider("dolly z dir")
+    this.cp5.addSlider("dolly y dir")
       .addListener(this.scene)
       .setPosition(10, 350)
+      .setSize(200, 30)
+      .setRange(-1.0, 1.0)
+      .setValue(this.scene.dolly.direction.y)
+      ;
+
+    this.cp5.addSlider("dolly z dir")
+      .addListener(this.scene)
+      .setPosition(10, 390)
       .setSize(200, 30)
       .setRange(-1.0, 1.0)
       .setValue(this.scene.dolly.direction.z)
@@ -105,7 +113,7 @@ class ControlFrame extends PApplet {
 
     this.cp5.addSlider("dolly speed")
       .addListener(this.scene)
-      .setPosition(10, 390)
+      .setPosition(10, 430)
       .setSize(200, 30)
       .setRange(-10.0, 10.0)
       .setValue(this.scene.dolly.speed)

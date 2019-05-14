@@ -148,6 +148,9 @@ class Scene implements ControlListener {
     else if (name == "dolly x dir") {
       this.dolly.direction.x = controller.getValue();
     }
+    else if (name == "dolly y dir") {
+      this.dolly.direction.y = controller.getValue();
+    }
     else if (name == "dolly z dir") {
       this.dolly.direction.z = controller.getValue();
     }
