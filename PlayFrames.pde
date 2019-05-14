@@ -11,6 +11,13 @@ enum RenderMode {
   CUSTOM
 }
 
+enum RenderStyle {
+  POINTS,
+  LINES,
+  TRIANGLES,
+  CUBES
+}
+
 PGL pgl;
 PShader sh;
 
@@ -19,6 +26,7 @@ QueasyCam cam2;
 ControlFrame cf;
 
 RenderMode renderMode = RenderMode.CUSTOM;
+RenderStyle renderStyle = RenderStyle.POINTS;
 boolean showAxises = false;
 
 // transformations
@@ -182,17 +190,30 @@ void draw() {
 
 void renderPolygon(FloatBuffer pointsBuffer) {
   ArrayList<PVector> points = getFilteredPoints(pointsBuffer);
-
+  int numPoints = points.size();
   // shader(sh);
 
-  noFill();
-  beginShape(POINTS);
+  // noFill();
+  noStroke();
 
-  for (int i = 0; i < points.size(); i++) {
+  int shapeType = POINTS;
+  if (renderStyle == RenderStyle.LINES) {
+    shapeType = LINES;
+  } else if (renderStyle == RenderStyle.TRIANGLES) {
+    shapeType = TRIANGLES;
+  }
+  beginShape(shapeType);
+
+  for (int i = 0; i < numPoints; i++) {
     PVector point = points.get(i);
 
     color pointColor = lerpColor(ORANGE, TURQUOISE, sin(point.z * scene.zColorDepth));
-    stroke(pointColor);
+
+    if (renderStyle == RenderStyle.LINES) {
+      stroke(pointColor);
+    } else {
+      fill(pointColor);
+    }
 
     vertex(point.x, point.y, point.z);
   }
@@ -239,12 +260,17 @@ public void keyPressed() {
   }
 
   if (key == 'm') {
-    // if (renderMode == RenderMode.POINTS) {
-    //   renderMode = RenderMode.CUSTOM;
-    // } else {
-    //   renderMode = RenderMode.POINTS;
-    // }
     cam2.sensitivity = cam2.sensitivity == 0.0 ? 1.0 : 0.0;
+  }
+
+  if (key == 'n') {
+    if (renderStyle == RenderStyle.POINTS) {
+      renderStyle = RenderStyle.LINES;
+    } else if (renderStyle == RenderStyle.LINES) {
+      renderStyle = RenderStyle.TRIANGLES;
+    } else if (renderStyle == RenderStyle.TRIANGLES) {
+      renderStyle = RenderStyle.POINTS;
+    }
   }
 
   if (key == 'x') {
