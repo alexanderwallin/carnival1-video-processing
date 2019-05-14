@@ -65,6 +65,16 @@ color EGG_SHELL = color(244, 241, 232);
 color ORANGE = color(235, 129, 44);
 color TURQUOISE = color(86, 198, 202);
 color DARK_TURQUOISE = color(26, 61, 56);
+color BLACK = lerpColor(color(0, 0, 0), DARK_TURQUOISE, 0.1);
+
+Palette palette1 = new Palette(BLACK, ORANGE, TURQUOISE);
+Palette palette2 = new Palette(WHITE_SMOKE, DARK_TURQUOISE, TURQUOISE);
+Palette palette3 = new Palette(EGG_SHELL, ORANGE, lerpColor(BLACK, ORANGE, 0.7));
+Palette palette4 = new Palette(TURQUOISE, WHITE_SMOKE, EGG_SHELL);
+
+Palette[] palettes = { palette1, palette2, palette3, palette4 };
+int paletteIndex = 0;
+Palette palette = palette1;
 
 // Recording
 Recorder rec;
@@ -151,7 +161,7 @@ void draw() {
   }
 
   // background(bg);
-  background(lerpColor(color(0, 0, 0), DARK_TURQUOISE, 0.2));
+  background(palette.background);
 
   // Move camera
   PVector cameraPos = cam2.position.copy();
@@ -210,7 +220,7 @@ void renderPolygon(FloatBuffer pointsBuffer) {
     float y = points.get(i * 3 + 1);
     float z = points.get(i * 3 + 2);
 
-    color pointColor = lerpColor(ORANGE, TURQUOISE, sin(z * scene.zColorDepth));
+    color pointColor = lerpColor(palette.primary, palette.secondary, sin(z * scene.zColorDepth));
 
     if (renderStyle == RenderStyle.TRIANGLES) {
       fill(pointColor);
@@ -274,6 +284,11 @@ public void keyPressed() {
     } else if (renderStyle == RenderStyle.TRIANGLES) {
       renderStyle = RenderStyle.POINTS;
     }
+  }
+
+  if (key == 'p') {
+    paletteIndex = (paletteIndex + 1) % palettes.length;
+    palette = palettes[paletteIndex];
   }
 
   if (key == 'x') {
