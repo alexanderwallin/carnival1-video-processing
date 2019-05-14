@@ -189,8 +189,9 @@ void draw() {
 }
 
 void renderPolygon(FloatBuffer pointsBuffer) {
-  ArrayList<PVector> points = getFilteredPoints(pointsBuffer);
-  int numPoints = points.size();
+  FloatBuffer points = getFilteredPoints(pointsBuffer);
+  int numPoints = points.array().length / 3;
+
   // shader(sh);
 
   // noFill();
@@ -205,9 +206,11 @@ void renderPolygon(FloatBuffer pointsBuffer) {
   beginShape(shapeType);
 
   for (int i = 0; i < numPoints; i++) {
-    PVector point = points.get(i);
+    float x = points.get(i * 3 + 0);
+    float y = points.get(i * 3 + 1);
+    float z = points.get(i * 3 + 2);
 
-    color pointColor = lerpColor(ORANGE, TURQUOISE, sin(point.z * scene.zColorDepth));
+    color pointColor = lerpColor(ORANGE, TURQUOISE, sin(z * scene.zColorDepth));
 
     if (renderStyle == RenderStyle.LINES) {
       stroke(pointColor);
@@ -215,7 +218,7 @@ void renderPolygon(FloatBuffer pointsBuffer) {
       fill(pointColor);
     }
 
-    vertex(point.x, point.y, point.z);
+    vertex(x, y, z);
   }
 
   endShape();
@@ -316,25 +319,35 @@ void resetCamera() {
   cam2.pan = scene.cameraPan;
 }
 
-ArrayList<PVector> getFilteredPoints(FloatBuffer pointsBuffer) {
+FloatBuffer getFilteredPoints(FloatBuffer pointsBuffer) {
   int numPoints = pointsBuffer.array().length / 3;
-  ArrayList<PVector> points = new ArrayList<PVector>(numPoints);
+  float[] filteredPoints = new float[numPoints * 3];
+  int numFilteredPoints = 0;
 
   for (int i = 0; i < numPoints; i += 3) {
-    PVector point = new PVector(
-      pointsBuffer.get(i) * 100,
-      pointsBuffer.get(i + 1) * -100,
-      pointsBuffer.get(i + 2) * 100
-    );
+    float x = pointsBuffer.get(i * 3 + 0) * 100;
+    float y = pointsBuffer.get(i * 3 + 1) * -100;
+    float z = pointsBuffer.get(i * 3 + 2) * 100;
+
     if (
-      scene.filterX.min <= point.x && point.x <= scene.filterX.max &&
-      scene.filterY.min <= point.y && point.y <= scene.filterY.max &&
-      scene.filterZ.min <= point.z && point.z <= scene.filterZ.max &&
+      scene.filterX.min <= x && x <= scene.filterX.max &&
+      scene.filterY.min <= y && y <= scene.filterY.max &&
+      scene.filterZ.min <= z && z <= scene.filterZ.max &&
       i % takeEvery == 0
     ) {
-      points.add(point);
+      filteredPoints[numFilteredPoints * 3 + 0] = x;
+      filteredPoints[numFilteredPoints * 3 + 1] = y;
+      filteredPoints[numFilteredPoints * 3 + 2] = z;
+
+      numFilteredPoints++;
     }
   }
 
-  return points;
+  FloatBuffer filteredPointsBuffer = FloatBuffer.allocate(numFilteredPoints * 3);
+  for (int i = 0; i < numFilteredPoints; i++) {
+    filteredPointsBuffer.put(i * 3 + 0, filteredPoints[i * 3 + 0]);
+    filteredPointsBuffer.put(i * 3 + 1, filteredPoints[i * 3 + 1]);
+    filteredPointsBuffer.put(i * 3 + 2, filteredPoints[i * 3 + 2]);
+  }
+  return filteredPointsBuffer;
 }
