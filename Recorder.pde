@@ -43,11 +43,10 @@ class Recorder {
       }
 
       if (this.hasStartedRecording == true && this.numFramesRecorded < this.numFrames) {
-        String filename = String.format(
-          "frame-%4s-%4s",
-          Integer.toString(frameCount - this.startFrame + 1),
-          Integer.toString(frameId)
-        ).replace(" ", "0") + ".png";
+        String frameIdStr = this.recordingMode == RecordingMode.FREE
+          ? Integer.toString(frameCount - this.startFrame + 1)
+          : Integer.toString(frameId + 1);
+        String filename = String.format("frame-%4s", frameIdStr).replace(" ", "0") + ".png";
         String framePath = "recordings/" + this.sceneName + "/" + filename;
 
         println("Saving frame to " + framePath);
