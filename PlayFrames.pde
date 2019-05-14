@@ -19,7 +19,7 @@ QueasyCam cam2;
 ControlFrame cf;
 
 RenderMode renderMode = RenderMode.CUSTOM;
-boolean showAxises = true;
+boolean showAxises = false;
 
 // transformations
 int zval = 250;
@@ -127,9 +127,7 @@ void draw() {
     loadFrames();
     hasLoadedFrames = true;
 
-    // Controls
-    println("dolly speeeeeed: " + scene.dolly.speed);
-    // cf.buildGUI(scene);
+    // Enable controls
     cf.setEnabled(true);
     scene.setListening(true);
   }
