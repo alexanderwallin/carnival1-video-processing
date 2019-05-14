@@ -253,13 +253,9 @@ public void keyPressed() {
     resetCamera();
   }
 
-  if (key == 'r') {
-    if (rec.isRecording()) {
-      rec.stopRecording();
-    }
-    else {
-      rec.startRecording(SCENE_NAME, frames.size());
-    }
+  if (key == 'k') {
+    scene.cameraPosition = cam2.position.copy();
+    scene.save();
   }
   if (key == 'l') {
     println("position:");
@@ -271,10 +267,21 @@ public void keyPressed() {
   }
 }
 
-// public void mouseMoved() {
-//   filterX = 500 * mouseX / width;
-//   filterZ = 500 * mouseY / height;
-// }
+void keyReleased(KeyEvent event) {
+  if (key == 'r' || key == 'R') {
+    println("is shift: " + event.isShiftDown());
+    if (rec.isRecording()) {
+      rec.stopRecording();
+    }
+    else {
+      if (event.isShiftDown()) {
+        rec.startRecording(SCENE_NAME, 5000, RecordingMode.FREE);
+      } else {
+        rec.startRecording(SCENE_NAME, frames.size(), RecordingMode.SINGLE_ROUND);
+      }
+    }
+  }
+}
 
 void resetCamera() {
   cam2.sensitivity = 0;
