@@ -71,8 +71,10 @@ Palette palette1 = new Palette(BLACK, ORANGE, TURQUOISE);
 Palette palette2 = new Palette(WHITE_SMOKE, DARK_TURQUOISE, TURQUOISE);
 Palette palette3 = new Palette(EGG_SHELL, ORANGE, lerpColor(BLACK, ORANGE, 0.7));
 Palette palette4 = new Palette(TURQUOISE, WHITE_SMOKE, EGG_SHELL);
+Palette palette5 = new Palette(BLACK, WHITE_SMOKE, EGG_SHELL);
+Palette palette6 = new Palette(EGG_SHELL, BLACK, DARK_TURQUOISE);
 
-Palette[] palettes = { palette1, palette2, palette3, palette4 };
+Palette[] palettes = { palette1, palette2, palette3, palette4, palette5, palette6 };
 int paletteIndex = 0;
 Palette palette = palette1;
 
